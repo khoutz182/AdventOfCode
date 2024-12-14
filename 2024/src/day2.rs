@@ -2,7 +2,7 @@ use crate::utils::read_lines;
 
 pub fn run() {
     let mut reports: Vec<Vec<u16>> = vec![];
-    if let Ok(lines) = read_lines(2) {
+    if let Ok(lines) = read_lines("2") {
         for line in lines.map_while(Result::ok) {
             reports.push(
                 line.split_whitespace()

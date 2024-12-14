@@ -7,7 +7,7 @@ pub fn run() {
     let mut list1: Vec<u32> = vec![];
     let mut list2: Vec<u32> = vec![];
 
-    if let Ok(lines) = read_lines(1) {
+    if let Ok(lines) = read_lines("1") {
         for line in lines.map_while(Result::ok) {
             let mut parts = line.split_whitespace();
             list1.push(parts.next().expect("whoa whoa wee whoa").parse().unwrap());
