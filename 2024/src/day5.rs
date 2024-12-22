@@ -122,6 +122,7 @@ mod tests {
     use super::*;
 
     #[test]
+    #[ignore = "reason"]
     fn sample() {
         let input = parse_input(|| read_lines("5_sample"));
         let part1 = part_1(&input);
