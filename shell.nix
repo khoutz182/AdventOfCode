@@ -18,12 +18,14 @@ pkgs.mkShell {
     rustup
   ];
   RUSTC_VERSION = overrides.toolchain.channel;
+  RUST_SRC_PATH = "${pkgs.rust.packages.stable.rustPlatform.rustLibSrc}";
+
   # https://github.com/rust-lang/rust-bindgen#environment-variables
   LIBCLANG_PATH = pkgs.lib.makeLibraryPath [ pkgs.llvmPackages_latest.libclang.lib ];
   shellHook = ''
-        export PATH=$PATH:''${CARGO_HOME:-~/.cargo}/bin
-        export PATH=$PATH:''${RUSTUP_HOME:-~/.rustup}/toolchains/$RUSTC_VERSION-x86_64-unknown-linux-gnu/bin/
-    		alias vim="nvim"
+    export PATH=$PATH:''${CARGO_HOME:-~/.cargo}/bin
+    export PATH=$PATH:''${RUSTUP_HOME:-~/.rustup}/toolchains/$RUSTC_VERSION-x86_64-unknown-linux-gnu/bin/
+    alias vim="nvim"
   '';
   # Add precompiled library to rustc search path
   RUSTFLAGS = (

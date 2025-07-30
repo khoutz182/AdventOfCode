@@ -1,62 +1,140 @@
-use std::{cmp::Ordering, collections::VecDeque};
-pub fn run() {}
+use crate::utils::read_lines;
+use std::{collections::VecDeque, fmt::Display};
 
-fn project(map_str: &str) -> Vec<Option<u8>> {
-    let map: Vec<_> = map_str.chars().map(|c| (c as u8) - b'0').collect();
-
-    let mut f_id: u8 = 0;
-    map.chunks(2)
-        .flat_map(|f_desc| {
-            let file_size = f_desc[0];
-            let free_space = f_desc.get(1).unwrap_or(&0_u8);
-            let mut block: Vec<Option<u8>> = Vec::with_capacity((file_size + free_space).into());
-
-            for i in 0..(file_size + free_space) {
-                block.push(match i.cmp(&file_size) {
-                    Ordering::Less => Some(f_id),
-                    _ => None,
-                });
-            }
-
-            f_id += 1;
-
-            block
-        })
-        .collect()
+struct DiskMap {
+    disk: VecDeque<Block>,
 }
 
-fn optimize(projection: Vec<Option<u8>>) -> Vec<Option<u8>> {
-    let mut ret: Vec<Option<u8>> = Vec::with_capacity(projection.len());
-    let mut trunc: VecDeque<_> = projection.iter().flatten().collect();
-    for opt in &projection {
-        if opt.is_some() {
-            ret.push(trunc.pop_front().copied());
-        } else {
-            ret.push(trunc.pop_back().copied());
+#[derive(Clone, Copy, Debug, PartialEq)]
+enum Block {
+    File { id: usize, size: usize },
+    Free { size: usize },
+}
+
+impl From<&str> for DiskMap {
+    fn from(value: &str) -> Self {
+        let disk: VecDeque<Block> =
+            value
+                .chars()
+                .enumerate()
+                .fold(VecDeque::new(), |mut disk, (id, size)| {
+                    if let Some(size) = size.to_digit(10) {
+                        match id % 2 {
+                            0 => disk.push_back(Block::File {
+                                id: id / 2,
+                                size: size as usize,
+                            }),
+                            _ => disk.push_back(Block::Free {
+                                size: size as usize,
+                            }),
+                        }
+                    }
+                    disk
+                });
+        Self { disk }
+    }
+}
+
+impl Display for DiskMap {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let display: String = self
+            .disk
+            .iter()
+            .flat_map(|block| match block {
+                Block::File { id, size } => vec![id.to_string(); *size],
+                Block::Free { size } => vec![".".to_string(); *size],
+            })
+            .collect();
+
+        write!(f, "{display}")
+    }
+}
+
+impl DiskMap {
+    fn checksum(&self) -> usize {
+        self.disk
+            .iter()
+            .enumerate()
+            .filter_map(|(idx, block)| match block {
+                Block::File { id, .. } => Some(idx * id),
+                _ => None,
+            })
+            .sum()
+    }
+
+    fn expand(self) -> Self {
+        Self {
+            disk: self
+                .disk
+                .into_iter()
+                .flat_map(|block| match block {
+                    Block::File { id, size } => vec![Block::File { id, size: 1 }; size],
+                    Block::Free { size } => vec![Block::Free { size: 1 }; size],
+                })
+                .collect(),
         }
     }
 
-    ret
-}
+    fn defragment(&mut self) -> Self {
+        let mut disk = VecDeque::new();
 
-fn checksum(projection: Vec<Option<u8>>) -> u64 {
-    projection.iter().enumerate().fold(0, |acc, (idx, opt)| {
-        let blah = idx.<u8>::into() + opt.unwrap_or(0);
-        acc + (idx.into::<u64>() * opt.unwrap_or(0))
-    })
-}
-
-fn project_to_string(projection: Vec<Option<u8>>) -> String {
-    projection
-        .iter()
-        .map(|opt| {
-            if let Some(val) = opt {
-                val.to_string()
-            } else {
-                ".".to_string()
+        while let Some(block) = self.disk.pop_front() {
+            match block {
+                Block::File { .. } => disk.push_back(block),
+                Block::Free { .. } => {
+                    while let Some(block) = self.disk.pop_back() {
+                        if let Block::File { .. } = block {
+                            disk.push_back(block);
+                            break;
+                        }
+                    }
+                }
             }
-        })
-        .collect()
+        }
+
+        Self { disk }
+    }
+
+    fn defragment_whole_files(&mut self) -> Self {
+        let mut disk = VecDeque::new();
+
+        while let Some(block) = self.disk.pop_front() {
+            match block {
+                Block::File { .. } => disk.push_back(block),
+                Block::Free { size: mut free } => {
+                    (0..self.disk.len()).rev().for_each(|i| {
+                        if let Block::File { size, .. } = self.disk[i] {
+                            if size <= free {
+                                disk.push_back(self.disk[i]);
+                                self.disk.remove(i);
+                                self.disk.insert(i, Block::Free { size });
+                                free -= size;
+                            }
+                        }
+                    });
+                    disk.push_back(Block::Free { size: free });
+                }
+            }
+        }
+
+        Self { disk }
+    }
+}
+
+pub fn run() {
+    if let Ok(lines) = read_lines("9") {
+        for line in lines.map_while(Result::ok) {
+            // Part 1
+            let map_p1 = DiskMap::from(line.as_str()).expand().defragment();
+            println!("Checksum p1: {}", map_p1.checksum());
+
+            // Part 2
+            let map_p2 = DiskMap::from(line.as_str())
+                .defragment_whole_files()
+                .expand();
+            println!("Checksum p2: {}", map_p2.checksum());
+        }
+    }
 }
 
 #[cfg(test)]
@@ -66,12 +144,17 @@ mod tests {
     #[test]
     fn sample() {
         let input = "2333133121414131402";
-        let diskmap = project(input);
-        let optimized = optimize(diskmap.clone());
-        let diskmap_str = project_to_string(diskmap);
-        let optimized_str = project_to_string(optimized);
 
-        assert_eq!(diskmap_str, "00...111...2...333.44.5555.6666.777.888899");
-        assert_eq!(optimized_str, "0099811188827773336446555566..............");
+        let disk_map_p1 = DiskMap::from(input).expand().defragment();
+
+        assert_eq!("0099811188827773336446555566", format!("{disk_map_p1}"));
+        assert_eq!(disk_map_p1.checksum(), 1928);
+
+        let disk_map = DiskMap::from(input).defragment_whole_files();
+
+        assert_eq!(
+            "00992111777.44.333....5555.6666.....8888..",
+            format!("{disk_map}")
+        )
     }
 }
