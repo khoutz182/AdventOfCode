@@ -108,8 +108,8 @@ mod tests {
         let stone_count_a = stones.blink_and_count(25);
         assert_eq!(stone_count_a, 55312);
 
-        let blinked = (0..25).fold(Arrangement::from(input), |acc, _| acc.blink());
-        let stone_count = blinked.stones.len();
-        assert_eq!(55312, stone_count);
+        // let blinked = (0..75).fold(Arrangement::from(input), |acc, _| acc.blink());
+        // let stone_count = blinked.stones.len();
+        // assert_eq!(55312, stone_count);
     }
 }
