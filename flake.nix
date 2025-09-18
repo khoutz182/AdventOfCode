@@ -8,10 +8,11 @@
   outputs =
     { self, nixpkgs }:
     let
-      pkgs = nixpkgs.legacyPackages."x86_64-linux";
+      system = "x86_64-linux";
+      pkgs = nixpkgs.legacyPackages.${system};
     in
     {
-      devShells."x86_64-linux".default = pkgs.mkShell {
+      devShells.${system}.default = pkgs.mkShell {
         buildInputs = with pkgs; [
           cargo
           rustc

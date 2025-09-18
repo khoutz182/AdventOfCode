@@ -2,13 +2,21 @@ use crate::utils::read_lines;
 
 pub fn run() {
     let grid = Grid::from("4");
-    let x_locations = grid.all_x_locations();
+    let x_locations = grid.all_locations(b'X');
     let count: usize = x_locations
         .iter()
         .map(|&(x, y)| grid.count_xmas(x, y))
         .sum();
 
     println!("count = {count}");
+
+    let a_locations = grid.all_locations(b'A');
+    let x_count: usize = a_locations
+        .iter()
+        .map(|&(x, y)| grid.count_exes(x, y))
+        .sum();
+
+    println!("ex count = {x_count}");
 }
 
 #[derive(Debug)]
@@ -35,10 +43,10 @@ impl From<&str> for Grid {
 }
 
 impl Grid {
-    fn all_x_locations(&self) -> Vec<(usize, usize)> {
+    fn all_locations(&self, char: u8) -> Vec<(usize, usize)> {
         (0..self.rows)
             .flat_map(|row| (0..self.cols).map(move |col| (row, col)))
-            .filter(|&(row, col)| self.bytes[row][col] == b'X')
+            .filter(|&(row, col)| self.bytes[row][col] == char)
             .collect()
     }
 
@@ -68,6 +76,27 @@ impl Grid {
             })
             .count()
     }
+
+    fn count_exes(&self, row: usize, col: usize) -> usize {
+        let first = (
+            self.get(row as isize - 1, col as isize - 1),
+            self.get(row as isize + 1, col as isize + 1),
+        );
+
+        let second = (
+            self.get(row as isize - 1, col as isize + 1),
+            self.get(row as isize + 1, col as isize - 1),
+        );
+
+        let match_first = matches!(first, (b'M', b'S') | (b'S', b'M'));
+        let match_second = matches!(second, (b'M', b'S') | (b'S', b'M'));
+
+        if match_first && match_second {
+            1
+        } else {
+            0
+        }
+    }
 }
 
 #[cfg(test)]
@@ -77,12 +106,20 @@ mod tests {
     #[test]
     fn sample() {
         let grid = Grid::from("4_sample");
-        let x_locations = grid.all_x_locations();
+        let x_locations = grid.all_locations(b'X');
         let count: usize = x_locations
             .iter()
             .map(|&(x, y)| grid.count_xmas(x, y))
             .sum();
 
         assert_eq!(18, count);
+
+        let a_locations = grid.all_locations(b'A');
+        let x_count: usize = a_locations
+            .iter()
+            .map(|&(x, y)| grid.count_exes(x, y))
+            .sum();
+
+        assert_eq!(9, x_count)
     }
 }
