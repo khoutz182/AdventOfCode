@@ -2,7 +2,7 @@
   description = "Advent of Code: solutions in rust";
 
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
   };
 
   outputs =
@@ -19,10 +19,16 @@
           rustfmt
           clippy
           rust-analyzer
+          gcc
+          clang
+          cmake
+          openssl
+          pkg-config
         ];
 
-        nativBuildInputs = [ pkgs.pkg-config ];
+        nativeBuildInputs = [ pkgs.pkg-config ];
         env.RUST_SRC_PATH = "${pkgs.rust.packages.stable.rustPlatform.rustLibSrc}";
+        env.PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
 
         shellHook = ''
           alias vim=nvim
