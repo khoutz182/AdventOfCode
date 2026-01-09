@@ -16,3 +16,11 @@ pub fn read_lines(day: &str) -> io::Result<io::Lines<io::BufReader<File>>> {
     let file = File::open(Path::new(&format!("./inputs/day{day}.txt")))?;
     Ok(io::BufReader::new(file).lines())
 }
+
+pub fn read_all_lines(day: &str) -> Vec<String> {
+    let file = File::open(Path::new(&format!("./inputs/day{day}.txt")));
+    io::BufReader::new(file.unwrap())
+        .lines()
+        .map_while(Result::ok)
+        .collect()
+}

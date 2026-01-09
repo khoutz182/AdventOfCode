@@ -143,7 +143,6 @@ mod tests {
         let mut removed = warehouse.remove_accessible_rolls();
         let mut total = removed;
         while removed > 0 {
-            println!("removed {removed} rolls");
             removed = warehouse.remove_accessible_rolls();
             total += removed;
         }

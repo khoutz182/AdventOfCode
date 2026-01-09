@@ -24,6 +24,7 @@
           cmake
           openssl
           pkg-config
+          vscode-extensions.vadimcn.vscode-lldb.adapter
         ];
 
         nativeBuildInputs = [ pkgs.pkg-config ];
